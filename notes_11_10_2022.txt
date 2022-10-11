@@ -1,0 +1,620 @@
+package com.infy.dto;
+
+import java.time.LocalDate;
+
+public class CustomerDTO {
+
+	private Integer customerId;
+	private String emailId;
+	private String name;
+	private LocalDate dateOfBirth;
+
+	public Integer getCustomerId() {
+		return customerId;
+	}
+
+	public void setCustomerId(Integer customerId) {
+		this.customerId = customerId;
+	}
+
+	public String getEmailId() {
+		return emailId;
+	}
+
+	public void setEmailId(String emailId) {
+		this.emailId = emailId;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public LocalDate getDateOfBirth() {
+		return dateOfBirth;
+	}
+
+	public void setDateOfBirth(LocalDate dateOfBirth) {
+		this.dateOfBirth = dateOfBirth;
+	}
+
+	@Override
+	public String toString() {
+
+		return "Customer [customerId=" + customerId + ", emailId=" + emailId + ", name=" + name + ", dateOfBirth="
+				+ dateOfBirth + "]";
+	}
+
+}
+
+
+                                                                                     OR
+
+
+package com.infy.dto;
+
+import java.time.LocalDate;
+
+import javax.validation.Valid;
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.PastOrPresent;
+import javax.validation.constraints.Pattern;
+
+public class CustomerDTO {
+
+	private Integer customerId;
+
+	@Email(message = "{customer.emailid.invalid}")
+	@NotNull(message = "{customer.emailid.absent}")
+	private String emailId;
+
+	@NotNull(message = "{customer.name.absent}")
+	@Pattern(regexp = "[A-Za-z]+( [A-Za-z]+)*", message = "{customer.name.invalid}")
+	private String name;
+
+	@PastOrPresent(message = "{customer.dob.invalid}")
+	private LocalDate dateOfBirth;
+
+	public Integer getCustomerId() {
+		return customerId;
+	}
+
+	public void setCustomerId(Integer customerId) {
+		this.customerId = customerId;
+	}
+
+	public String getEmailId() {
+		return emailId;
+	}
+
+	public void setEmailId(String emailId) {
+		this.emailId = emailId;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public LocalDate getDateOfBirth() {
+		return dateOfBirth;
+	}
+
+	public void setDateOfBirth(LocalDate dateOfBirth) {
+		this.dateOfBirth = dateOfBirth;
+	}
+
+	
+	@Override
+	public String toString() {
+		return "CustomerDTO [customerId=" + customerId + ", emailId=" + emailId + ", name=" + name + ", dateOfBirth="
+				+ dateOfBirth + ", addressDTO=" + addressDTO + "]";
+	}
+
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+package com.infy.entity;
+
+import java.time.LocalDate;
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+
+import com.infy.dto.CustomerDTO;
+
+@Entity
+public class Customer {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Integer customerId;
+	private String emailId;
+	private String name;
+	private LocalDate dateOfBirth;
+
+	public Integer getCustomerId() {
+		return customerId;
+	}
+
+	public void setCustomerId(Integer customerId) {
+		this.customerId = customerId;
+	}
+
+	public String getEmailId() {
+		return emailId;
+	}
+
+	public void setEmailId(String emailId) {
+		this.emailId = emailId;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public LocalDate getDateOfBirth() {
+		return dateOfBirth;
+	}
+
+	public void setDateOfBirth(LocalDate dateOfBirth) {
+		this.dateOfBirth = dateOfBirth;
+	}
+
+	@Override
+	public int hashCode() {
+
+		return 31;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (this.getClass() != obj.getClass())
+			return false;
+		CustomerDTO other = (CustomerDTO) obj;
+		if (this.getCustomerId() == null) {
+			if (other.getCustomerId() != null)
+				return false;
+		} else if (!this.getCustomerId().equals(other.getCustomerId()))
+			return false;
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "Customer [customerId=" + customerId + ", emailId=" + emailId + ", name=" + name + ", dateOfBirth="
+				+ dateOfBirth + "]";
+	}
+
+}
+---------------------------------------------------------------------------------------------------------------------------------------------------
+package com.infy.exception;
+
+public class InfyBankException extends Exception {
+
+	private static final long serialVersionUID = 1L;
+
+	public InfyBankException(String message) {
+		super(message);
+		
+	}
+	
+}
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+package com.infy.repository;
+
+
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.data.repository.CrudRepository;
+
+import com.infy.entity.Customer;
+
+public interface CustomerRepository extends CrudRepository<Customer, Integer> {
+List<Customer> findByDateOfBirthAfter(LocalDate date);
+}
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+package com.infy.service;
+
+import java.time.LocalDate;
+import java.util.List;
+
+import com.infy.dto.CustomerDTO;
+import com.infy.exception.InfyBankException;
+
+public interface CustomerService {
+	public CustomerDTO getCustomer(Integer customerId) throws InfyBankException;
+	public List<CustomerDTO> getAllCustomers() throws InfyBankException;
+	public Integer addCustomer(CustomerDTO customer) throws InfyBankException;
+	public void updateCustomer(Integer customerId, String emailId) throws InfyBankException;
+	public void deleteCustomer(Integer customerId) throws InfyBankException;
+    public List<CustomerDTO> getAllCustomersAfterDate(LocalDate date) throws InfyBankException;
+  }
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+package com.infy.service;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.infy.dto.CustomerDTO;
+import com.infy.entity.Customer;
+import com.infy.exception.InfyBankException;
+import com.infy.repository.CustomerRepository;
+
+@Service(value = "customerService")
+@Transactional
+public class CustomerServiceImpl implements CustomerService {
+
+	@Autowired
+	private CustomerRepository customerRepository;
+
+	@Override
+	public CustomerDTO getCustomer(Integer customerId) throws InfyBankException {
+		Optional<Customer> optional = customerRepository.findById(customerId);
+		Customer customer = optional.orElseThrow(() -> new InfyBankException("Service.CUSTOMER_NOT_FOUND"));
+		CustomerDTO customer2 = new CustomerDTO();
+		customer2.setCustomerId(customer.getCustomerId());
+		customer2.setDateOfBirth(customer.getDateOfBirth());
+		customer2.setEmailId(customer.getEmailId());
+		customer2.setName(customer.getName());
+		return customer2;
+	}
+
+	@Override
+	public List<CustomerDTO> getAllCustomers() throws InfyBankException {
+		Iterable<Customer> customers = customerRepository.findAll();
+		List<CustomerDTO> customers2 = new ArrayList<>();
+		customers.forEach(customer -> {
+			CustomerDTO cust = new CustomerDTO();
+			cust.setCustomerId(customer.getCustomerId());
+			cust.setDateOfBirth(customer.getDateOfBirth());
+			cust.setEmailId(customer.getEmailId());
+			cust.setName(customer.getName());
+			customers2.add(cust);
+		});
+		if (customers2.isEmpty())
+			throw new InfyBankException("Service.CUSTOMERS_NOT_FOUND");
+		return customers2;
+	}
+	
+	@Override
+	public List<CustomerDTO> getAllCustomersAfterDate(LocalDate date) throws InfyBankException {
+		List<Customer> customers = customerRepository.findByDateOfBirthAfter(date);
+		List<CustomerDTO> customers2 = new ArrayList<>();
+		customers.forEach(customer -> {
+			CustomerDTO cust = new CustomerDTO();
+			cust.setCustomerId(customer.getCustomerId());
+			cust.setDateOfBirth(customer.getDateOfBirth());
+			cust.setEmailId(customer.getEmailId());
+			cust.setName(customer.getName());
+			customers2.add(cust);
+		});
+		if (customers2.isEmpty())
+			throw new InfyBankException("Service.CUSTOMERS_NOT_FOUND");
+		return customers2;
+	}
+
+
+	@Override
+	public Integer addCustomer(CustomerDTO customer) throws InfyBankException {
+		Customer customerEntity = new Customer();
+		customerEntity.setDateOfBirth(customer.getDateOfBirth());
+		customerEntity.setEmailId(customer.getEmailId());
+		customerEntity.setName(customer.getName());
+		customerEntity.setCustomerId(customer.getCustomerId());
+		Customer customerEntity2 = customerRepository.save(customerEntity);
+		return customerEntity2.getCustomerId();
+	}
+
+	@Override
+	public void updateCustomer(Integer customerId, String emailId) throws InfyBankException {
+		Optional<Customer> customer = customerRepository.findById(customerId);
+		Customer c = customer.orElseThrow(() -> new InfyBankException("Service.CUSTOMER_NOT_FOUND"));
+		c.setEmailId(emailId);
+	}
+
+	@Override
+	public void deleteCustomer(Integer customerId) throws InfyBankException {
+		Optional<Customer> customer = customerRepository.findById(customerId);
+		customer.orElseThrow(() -> new InfyBankException("Service.CUSTOMER_NOT_FOUND"));
+		customerRepository.deleteById(customerId);
+	}
+
+}
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+package com.infy.api;
+
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.infy.dto.CustomerDTO;
+import com.infy.exception.InfyBankException;
+import com.infy.service.CustomerService;
+
+@RestController
+@RequestMapping(value = "/infybank")
+public class CustomerAPI {
+
+	@Autowired
+	private CustomerService customerService;
+
+	@Autowired
+	private Environment environment;
+
+	@GetMapping(value = "/customers")
+	public ResponseEntity<List<CustomerDTO>> getAllCustomers() throws InfyBankException {
+		List<CustomerDTO> customerList = customerService.getAllCustomers();
+		return new ResponseEntity<>(customerList, HttpStatus.OK);
+	}
+
+	@GetMapping(value = "/customers/{date}/{month}/{year}")
+	public ResponseEntity<List<CustomerDTO>> getAllCustomersDateOfBirthAfter(@PathVariable Integer date,@PathVariable Integer month,@PathVariable Integer year) throws InfyBankException {
+	    LocalDate date1=LocalDate.of(date,month,year);
+		List<CustomerDTO> customerList = customerService.getAllCustomersAfterDate(date1);
+		return new ResponseEntity<>(customerList, HttpStatus.OK);
+	}
+
+	@GetMapping(value = "/customers/{customerId}")
+	public ResponseEntity<CustomerDTO> getCustomer(@PathVariable Integer customerId) throws InfyBankException {
+		CustomerDTO customer = customerService.getCustomer(customerId);
+		return new ResponseEntity<>(customer, HttpStatus.OK);
+	}
+
+	@PostMapping(value = "/customers")
+	public ResponseEntity<String> addCustomer(@RequestBody CustomerDTO customer) throws InfyBankException {
+		Integer customerId = customerService.addCustomer(customer);
+		String successMessage = environment.getProperty("API.INSERT_SUCCESS") + customerId;
+		return new ResponseEntity<>(successMessage, HttpStatus.CREATED);
+	}
+
+	@PutMapping(value = "/customers/{customerId}")
+	public ResponseEntity<String> updateCustomer(@PathVariable Integer customerId, @RequestBody CustomerDTO customer)
+			throws InfyBankException {
+		customerService.updateCustomer(customerId, customer.getEmailId());
+		String successMessage = environment.getProperty("API.UPDATE_SUCCESS");
+		return new ResponseEntity<>(successMessage, HttpStatus.OK);
+	}
+
+	@DeleteMapping(value = "/customers/{customerId}")
+	public ResponseEntity<String> deleteCustomer(@PathVariable Integer customerId) throws InfyBankException {
+		customerService.deleteCustomer(customerId);
+		String successMessage = environment.getProperty("API.DELETE_SUCCESS");
+		return new ResponseEntity<>(successMessage, HttpStatus.OK);
+	}
+}
+---------------------------------------------------------------------------------------------------------------------------------------
+
+package com.infy.utility;
+
+import java.time.LocalDateTime;
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import com.infy.exception.InfyBankException;
+
+@RestControllerAdvice
+public class ExceptionControllerAdvice {
+	@Autowired
+	Environment environment;
+
+	@ExceptionHandler(Exception.class)
+	public ResponseEntity<ErrorInfo> exceptionHandler(Exception exception) {
+		ErrorInfo error = new ErrorInfo();
+		error.setErrorMessage(environment.getProperty("General.EXCEPTION_MESSAGE"));
+		error.setErrorCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+		error.setTimestamp(LocalDateTime.now());
+		return new ResponseEntity<ErrorInfo>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+	}
+
+	@ExceptionHandler(InfyBankException.class)
+	public ResponseEntity<ErrorInfo> infyBankExceptionHandler(InfyBankException exception) {
+		ErrorInfo error = new ErrorInfo();
+		error.setErrorMessage(environment.getProperty(exception.getMessage()));
+		error.setTimestamp(LocalDateTime.now());
+		error.setErrorCode(HttpStatus.NOT_FOUND.value());
+		return new ResponseEntity<ErrorInfo>(error, HttpStatus.NOT_FOUND);
+	}
+	
+}
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+package com.infy.utility;
+
+import org.aspectj.lang.annotation.AfterThrowing;
+import org.aspectj.lang.annotation.Aspect;
+import org.springframework.stereotype.Component;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+@Component
+@Aspect
+public class LoggingAspect {
+	public static final Log LOGGER = LogFactory.getLog(LoggingAspect.class);
+
+	@AfterThrowing(pointcut = "execution(* com.infy.service.*Impl.*(..))", throwing = "exception")
+	public void logServiceException(Exception exception) throws Exception {
+		LOGGER.error(exception.getMessage(), exception);
+	}
+
+}
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+package com.infy;
+
+import static org.mockito.ArgumentMatchers.any;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.infy.dto.CustomerDTO;
+import com.infy.entity.Customer;
+import com.infy.exception.InfyBankException;
+import com.infy.repository.CustomerRepository;
+import com.infy.service.CustomerService;
+import com.infy.service.CustomerServiceImpl;
+
+@SpringBootTest
+class DemoSpringRestApplicationTests {
+
+	@Mock // We are creating a mock object of
+	// customerRepository
+	private CustomerRepository customerRepository;
+
+	@InjectMocks
+	// The mock object created in line 19
+	// is injected/used to the customerServiceImpl object
+	private CustomerService customerServiceImpl = new CustomerServiceImpl();
+
+	@Test
+	void getCustomerValidTest() throws InfyBankException {
+		// We have to define or propose the behaviour of the
+		// method called findById
+		Customer customer = new Customer();
+		customer.setCustomerId(1);
+		customer.setName("Abhi");
+		customer.setEmailId("abhi@gmail.com");
+		customer.setDateOfBirth(LocalDate.of(2010, 10, 12));
+		Optional<Customer> opt = Optional.of(customer);
+		Mockito.when(customerRepository.findById(1)).thenReturn(opt);
+		CustomerDTO customerDTO = customerServiceImpl.getCustomer(1);
+		String expected = "Abhi";
+		Assertions.assertEquals(expected, customerDTO.getName());
+	}
+
+	@Test
+	void getCustomerInValidTest() throws InfyBankException {
+		// We have to define or propose the behaviour of the
+		// method called findById
+		Customer customer = null;
+		Optional<Customer> opt = Optional.ofNullable(customer);
+		Mockito.when(customerRepository.findById(100)).thenReturn(opt);
+		InfyBankException exception = Assertions.assertThrows(InfyBankException.class,
+				() -> customerServiceImpl.getCustomer(100));
+		String actual = exception.getMessage();
+		String expected = "Service.CUSTOMER_NOT_FOUND";
+
+		Assertions.assertEquals(expected, actual);
+	}
+
+	@Test
+	public void getAllCustomers() throws InfyBankException {
+
+		ArrayList<Customer> customerList = new ArrayList<>();
+		Customer cust1 = new Customer();
+		cust1.setCustomerId(1);
+		cust1.setName("Ravi");
+		cust1.setEmailId("ravi@gmail.com");
+		cust1.setDateOfBirth(LocalDate.of(2010, 12, 1));
+		Customer cust2 = new Customer();
+		cust2.setCustomerId(2);
+		cust2.setName("Geeta");
+		cust2.setEmailId("geeta@gmail.com");
+		cust2.setDateOfBirth(LocalDate.of(2011, 12, 12));
+		customerList.add(cust1);
+		customerList.add(cust2);
+		Mockito.when(customerRepository.findAll()).thenReturn(customerList);
+		List<CustomerDTO> customerDTOs = customerServiceImpl.getAllCustomers();
+		int expected = customerDTOs.get(0).getCustomerId();
+		// CustomerDTO cust=customerDTOs.get(0);
+		// int expected=cust.getCustomerId();
+		int actual = customerList.get(0).getCustomerId();
+		Assertions.assertEquals(expected, actual);
+	}
+
+	@Test
+	public void getAllCustomersNoData() throws InfyBankException {
+		ArrayList<Customer> customerList = new ArrayList<>();
+		Mockito.when(customerRepository.findAll()).thenReturn(customerList);
+		InfyBankException exception = Assertions.assertThrows(InfyBankException.class,
+				() -> customerServiceImpl.getAllCustomers());
+		Assertions.assertEquals("Service.CUSTOMERS_NOT_FOUND", exception.getMessage());
+
+	}
+
+	@Test
+	public void getAllCustomersDataOfBirthAfter() throws InfyBankException {
+		LocalDate date = LocalDate.of(2022, 10, 11);
+		List<Customer> customerList = new ArrayList<>();
+		Mockito.when(customerRepository.findByDateOfBirthAfter(date)).thenReturn(customerList);
+		InfyBankException exception = Assertions.assertThrows(InfyBankException.class,
+				() -> customerServiceImpl.getAllCustomersAfterDate(date));
+		Assertions.assertEquals("Service.CUSTOMERS_NOT_FOUND", exception.getMessage());
+
+	}
+
+	@Test
+	public void addCustomerTest() throws InfyBankException {
+		Customer customer = new Customer();
+		customer.setCustomerId(1);
+		customer.setName("Ram");
+		customer.setEmailId("ram@gmail.com");
+		customer.setDateOfBirth(LocalDate.now());
+		Mockito.when(customerRepository.save(any())).thenReturn(customer);
+		CustomerDTO customerDTO = new CustomerDTO();
+		customerDTO.setCustomerId(1);
+		customerDTO.setName("Ram");
+		customerDTO.setEmailId("ram@gmail.com");
+		customerDTO.setDateOfBirth(LocalDate.now());
+		int id = customerServiceImpl.addCustomer(customerDTO);
+		Assertions.assertEquals(1, id);
+	}
+
+}
+
+
