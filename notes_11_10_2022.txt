@@ -425,6 +425,58 @@ package com.infy.utility;
 
 import java.time.LocalDateTime;
 
+public class ErrorInfo {
+	private String errorMessage;
+	private Integer errorCode;
+	private LocalDateTime timestamp;
+
+	public String getErrorMessage() {
+		return errorMessage;
+	}
+
+	public void setErrorMessage(String errorMessage) {
+		this.errorMessage = errorMessage;
+	}
+
+	public Integer getErrorCode() {
+		return errorCode;
+	}
+
+	public void setErrorCode(Integer errorCode) {
+		this.errorCode = errorCode;
+	}
+
+	public LocalDateTime getTimestamp() {
+		return timestamp;
+	}
+
+	public void setTimestamp(LocalDateTime timestamp) {
+		this.timestamp = timestamp;
+	}
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------
+package com.infy.utility;
+
+import java.time.LocalDateTime;
+
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -441,6 +493,7 @@ public class ExceptionControllerAdvice {
 	@Autowired
 	Environment environment;
 
+        // Global exception handler
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ErrorInfo> exceptionHandler(Exception exception) {
 		ErrorInfo error = new ErrorInfo();
@@ -449,7 +502,7 @@ public class ExceptionControllerAdvice {
 		error.setTimestamp(LocalDateTime.now());
 		return new ResponseEntity<ErrorInfo>(error, HttpStatus.INTERNAL_SERVER_ERROR);
 	}
-
+        // Customised Exception handler
 	@ExceptionHandler(InfyBankException.class)
 	public ResponseEntity<ErrorInfo> infyBankExceptionHandler(InfyBankException exception) {
 		ErrorInfo error = new ErrorInfo();
@@ -458,6 +511,37 @@ public class ExceptionControllerAdvice {
 		error.setErrorCode(HttpStatus.NOT_FOUND.value());
 		return new ResponseEntity<ErrorInfo>(error, HttpStatus.NOT_FOUND);
 	}
+
+       // Bean Validation related Exception handler
+         @ExceptionHandler(MethodArgumentNotValidException.class)
+	public ResponseEntity<ErrorInfo> exceptionHandler(MethodArgumentNotValidException exception) {
+
+		ErrorInfo errorInfo = new ErrorInfo();
+		errorInfo.setErrorCode(HttpStatus.BAD_REQUEST.value());
+
+		
+		String errorMsg = exception.getBindingResult().getAllErrors().stream().map(x -> x.getDefaultMessage())
+				.collect(Collectors.joining(", "));
+
+		errorInfo.setErrorMessage(errorMsg);
+		errorInfo.setTimestamp(LocalDateTime.now());
+		return new ResponseEntity<>(errorInfo, HttpStatus.BAD_REQUEST);
+	}
+
+       // Path variable related Exception handler
+	@ExceptionHandler(ConstraintViolationException.class)
+	public ResponseEntity<ErrorInfo> pathExceptionHandler(ConstraintViolationException exception) {
+	         ErrorInfo errorInfo = new ErrorInfo();
+		 errorInfo.setErrorCode(HttpStatus.BAD_REQUEST.value());
+
+		String errorMsg = exception.getConstraintViolations().stream().map(x -> x.getMessage())
+					.collect(Collectors.joining(", "));
+			errorInfo.setErrorMessage(errorMsg);
+			errorInfo.setTimestamp(LocalDateTime.now());
+			return new ResponseEntity<>(errorInfo, HttpStatus.BAD_REQUEST);
+		}
+	
+
 	
 }
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -617,4 +701,167 @@ class DemoSpringRestApplicationTests {
 
 }
 
+
+----------------------------
+application.properties
+
+Service.CUSTOMER_NOT_FOUND=No customer found with given customer id.
+Service.CUSTOMERS_NOT_FOUND=No customers found. 
+General.EXCEPTION_MESSAGE=Request could not be processed due to some issue. Please try again!
+
+API.INSERT_SUCCESS=Customer added successfully with customer id : 
+API.UPDATE_SUCCESS=Customer emailid successfully updated.
+API.DELETE_SUCCESS=Customer details deleted successfully.
+
+# MySQL settings
+#Change these settings according to database you are using
+spring.datasource.url=jdbc:mysql://localhost:3306/customer_db
+spring.datasource.username=root
+
+#If MySQL installation is password proctored,then use below property to set password
+spring.datasource.password=password@123
+
+#JPA settings
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+server.port=8765
+----------------------------------------------------------------------------------------------------------------------------------------
+log4j2.properties
+
+
+#Name of the Properties file
+name=LoggerConfigFile
+
+#Declaring root for file
+rootLogger.level = INFO
+rootLogger.appenderRef.stdout.ref = ConsoleAppender
+
+#Declaring logger for file
+logger.file.name=com.infy.utility
+logger.file.level=DEBUG
+logger.file.appenderRef.file.ref=LoggerAppender
+logger.file.additivity=false
+
+#Declaring logger for console
+logger.console.name=com.infy
+logger.console.level=INFO
+logger.console.appenderRef.file.ref=ConsoleAppender
+logger.console.additivity=false
+
+# File Appender
+appender.file.name=LoggerAppender
+appender.file.type=File
+appender.file.fileName=log/ErrorLog.log
+#Logging Pattern
+appender.file.layout.type=PatternLayout
+appender.file.layout.pattern=%d{dd-MMM-yyyy HH:mm:ss} %level - %m%n
+
+# Console Appender
+appender.console.name=ConsoleAppender
+appender.console.type=Console
+#Logging Pattern for console
+appender.console.layout.type=PatternLayout
+appender.console.layout.pattern=%m%n
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ValidationMessages.properties
+
+customer.emailid.absent=Please provide email address
+customer.emailid.invalid=Please provide valid email address
+customer.name.absent=Please provide customer name
+customer.name.invalid=Name should contain only alphabets and space
+customer.dob.invalid=Date of birth should be past or present date
+customer.customerid.invalid=Customer id should be between 1 and 100
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+pom.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>2.6.2</version>
+		<relativePath /> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>Demo_SpringREST_Validation_02</groupId>
+	<artifactId>Demo02_SpringREST_Validation</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>Demo_SpringREST_Validation_02</name>
+	<description>Demo project for Spring DATA Validation</description>
+
+	<properties>
+		<java.version>11</java.version>
+		<log4j2.version>2.17.1</log4j2.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-log4j2</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.17</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<scope>runtime</scope>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>org.junit.vintage</groupId>
+					<artifactId>junit-vintage-engine</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
 
